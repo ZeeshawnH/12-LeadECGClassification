@@ -61,8 +61,13 @@ def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, c
         length = len(header_files)
 
         for i in range(length):
+            data_matrix = []
+
+            # Get mat and header files
             mat_file_path = recording_files[i]
             header_file_path = header_files[i]
+
+            # Load mat file and header file
             try:
                 mat = loadmat(mat_file_path)
             except (scipy.io.matlab._miobase.MatReadError, FileNotFoundError):
@@ -71,9 +76,9 @@ def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, c
             frequency = get_frequency(header)
             num_samples = get_num_samples(header)
 
-            lead1_cycles, cycle_durations = extract_ecg_cycles(mat['val'], frequency, num_samples, cycle_length, cycle_num, overlap)
+            all_lead_cycles, cycle_durations = extract_ecg_cycles(mat['val'], frequency, num_samples, cycle_length, cycle_num, overlap)
             # print(cycle_durations)
-            if lead1_cycles is None:
+            if all_lead_cycles is None:
                 continue
 
             diagnosis = get_labels(header)
