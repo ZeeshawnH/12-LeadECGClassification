@@ -54,7 +54,7 @@ def extract_ecg_cycles(recording, frequency, num_samples, target_length=256, cyc
 
 def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, cycle_num=1, overlap=0):
     cnt = 0
-    data_rows = []
+    matrices = []
     
     for path in paths:
         header_files, recording_files = find_all_challenge_files(path)
@@ -77,31 +77,91 @@ def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, c
             num_samples = get_num_samples(header)
 
             all_lead_cycles, cycle_durations = extract_ecg_cycles(mat['val'], frequency, num_samples, cycle_length, cycle_num, overlap)
-            # print(cycle_durations)
             if all_lead_cycles is None:
                 continue
 
             diagnosis = get_labels(header)
             if len(diagnosis) == 1 and int(diagnosis[0]) in disease_labels:
                 cnt += 1
-
-                for cycle, duration in zip(lead1_cycles, cycle_durations):
-                    # Create a data row with diagnosis, cycle data, and duration
-                    row_data = {'diagnosis': diagnosis, 'cycle_duration': duration}
                     
-                    # Add each point in the cycle to the row
-                    for j in range(len(cycle)):
-                        row_data[f'point_{j + 1}'] = cycle[j]
+                for lead_cycles in all_lead_cycles:
+                    lead = []
+                    for cycle, duration in zip(lead_cycles, cycle_durations):
+                        # Create a data row with cycle data, and duration
+                        row_data = {'diagnosis': diagnosis, 'cycle_duration': duration}
+                        
+                        # Add each point in the cycle to the row
+                        for j in range(len(cycle)):
+                            row_data[f'point_{j + 1}'] = cycle[j]
+                        
+                        lead.append(row_data)
+                    data_matrix.append(lead)
                     
-                    data_rows.append(row_data)
+                matrices.append(data_matrix)
 
-            if max_circle is not None and len(data_rows) >= max_circle:
+            if max_circle is not None and len(matrices) >= max_circle:
                 break
 
-    df = pd.DataFrame(data_rows)
     print(f"Number of {data_type} records: {cnt}")
-    return df, []
+    return matrices, []
 
+def pad_data(matrices):
+    """
+    Takes list of matrices and pads them
+    Separates labels from matrices, maintaining matching indices
+    Returns:
+        padded matrices
+        corresponding labels
+    """
+
+    labels = []
+    padded_matrices = []
+    padded_durations = []
+
+    for matrix in matrices:
+        # Store diagnosis since it's the same for the whole matrix
+        diagnosis = matrix[0][0]['diagnosis']
+        labels.append(diagnosis)
+
+        # Find max number of cycles in any particular lead
+        max_lead_len = max([len(lead) for lead in matrix])
+
+        # Pad leads with extra cycles of 0 values
+        padded_leads = []
+        padded_lead_durations = []
+
+        for lead in matrix:
+            lead_array = []
+            lead_duration_array = []
+
+            for cycle in lead:
+                cycle_array = []
+                for i in range(2, 258):
+                    cycle_array.append(cycle[f"point_{i}"])
+                lead_array.append(np.array(cycle_array))
+
+                # Extract duration
+                lead_duration_array.append(cycle['cycle_duration'])
+
+            # Add padding
+            diff = max_lead_len - len(lead)
+            for i in range(diff):
+                padding_cycle = np.zeros(256)
+                lead_array.append(padding_cycle)
+                # Duration padding
+                lead_duration_array.append(0.0)
+
+            padded_leads.append(np.array(lead_array))
+            padded_lead_durations.append(np.array(lead_duration_array))
+
+
+        # Stack the padded leads to create a padded matrix
+        padded_matrix = np.stack(padded_leads)
+        padded_matrices.append(padded_matrix)
+
+        padded_durations.append(np.stack(padded_lead_durations))
+
+    return padded_matrices, labels, padded_durations
 
 
 if __name__ == "__main__":
