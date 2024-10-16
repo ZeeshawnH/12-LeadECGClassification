@@ -54,7 +54,7 @@ def extract_ecg_cycles(recording, frequency, num_samples, target_length=256, cyc
 
 def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, cycle_num=1, overlap=0):
     cnt = 0
-    matrices = []
+    cycles = []
     
     for path in paths:
         header_files, recording_files = find_all_challenge_files(path)
@@ -84,26 +84,31 @@ def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, c
             if len(diagnosis) == 1 and int(diagnosis[0]) in disease_labels:
                 cnt += 1
                     
-                for lead_cycles in all_lead_cycles:
-                    lead = []
-                    for cycle, duration in zip(lead_cycles, cycle_durations):
-                        # Create a data row with cycle data, and duration
-                        row_data = {'diagnosis': diagnosis, 'cycle_duration': duration}
-                        
-                        # Add each point in the cycle to the row
-                        for j in range(len(cycle)):
-                            row_data[f'point_{j + 1}'] = cycle[j]
-                        
-                        lead.append(row_data)
-                    data_matrix.append(lead)
-                    
-                matrices.append(data_matrix)
+                max_cycles = max([len(lead_cycles) for lead_cycles in all_lead_cycles])
 
-            if max_circle is not None and len(matrices) >= max_circle:
+                for cycle_idx in range(max_cycles):
+                    cycle_data = []
+                    for lead_idx in range(12):
+                        cycle = all_lead_cycles[lead_idx][cycle_idx] if cycle_idx < len(all_lead_cycles[lead_idx]) else [0.0 for _ in range(cycle_num * cycle_length)]
+                        duration = cycle_durations[lead_idx][cycle_idx] if cycle_idx < len(cycle_durations[lead_idx]) else 0.0
+
+                        row_data = {'diagnosis': diagnosis, 'cycle_duration': duration}
+
+                        for i in range(len(cycle)):
+                            row_data[f'point_{i + 1}'] = cycle[i]
+
+                        cycle_data.append(row_data)
+
+                    cycles.append(cycle_data)
+
+
+            if max_circle is not None and len(cycles) >= max_circle:
                 break
 
     print(f"Number of {data_type} records: {cnt}")
-    return matrices, []
+    return cycles, []
+
+
 
 def pad_data(matrices):
     """
