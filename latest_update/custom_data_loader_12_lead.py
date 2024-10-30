@@ -149,9 +149,12 @@ def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, c
 
                 ## TODO Do we want to pad the shorter leads here or later?
                 max_lead_length = max(len(lead) for lead in all_lead_cycles)
+                max_length_lead = 0
+                for i in range(12):
+                    max_length_lead = max(len(all_lead_cycles[max_length_lead], len(all_lead_cycles[i])))
                 # Get length of a cycle for padding with 0s later
-                if len(all_lead_cycles) > 0:
-                    cycle_length = all_lead_cycles[0][0]
+                if len(all_lead_cycles) > 0 and len(all_lead_cycles[max_length_lead]) > 0:
+                    cycle_length = all_lead_cycles[max_length_lead][0]
                 else:
                     continue
                 # Prepare rows for each cycle
