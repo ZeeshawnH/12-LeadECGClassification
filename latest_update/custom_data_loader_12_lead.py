@@ -106,7 +106,6 @@ def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, c
         length = len(header_files)
 
         for i in range(length):
-            data_matrix = []
 
             # Get mat and header files
             mat_file_path = recording_files[i]
@@ -151,7 +150,10 @@ def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, c
                 ## TODO Do we want to pad the shorter leads here or later?
                 max_lead_length = max(len(lead) for lead in all_lead_cycles)
                 # Get length of a cycle for padding with 0s later
-                cycle_length = all_lead_cycles[0][0]
+                if len(all_lead_cycles) > 0:
+                    cycle_length = all_lead_cycles[0][0]
+                else:
+                    continue
                 # Prepare rows for each cycle
                 for cycle_idx in range(max_lead_length):
                     cycle_data = []
