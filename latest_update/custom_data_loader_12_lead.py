@@ -148,17 +148,28 @@ def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, c
                 cnt += 1
 
                 ## TODO Do we want to pad the shorter leads here or later?
-                max_lead_length = max(len(lead) for lead in all_lead_cycles)
-                max_length_lead = 0
-                for i in range(12):
-                    max_length_lead = max(len(all_lead_cycles[max_length_lead], len(all_lead_cycles[i])))
-                # Get length of a cycle for padding with 0s later
-                if len(all_lead_cycles) > 0 and len(all_lead_cycles[max_length_lead]) > 0:
-                    cycle_length = all_lead_cycles[max_length_lead][0]
-                else:
+                min_lead_length = min(len(lead) for lead in all_lead_cycles)
+                if min_lead_length == 0:
                     continue
+                # min_length_lead = 0
+                # if len(all_lead_cycles) != 12:
+                #     print(len(all_lead_cycles))
+                #     continue
+                # for i in range(12):
+                #     if len(all_lead_cycles[i]) < len(all_lead_cycles[min_length_lead]):
+                #         min_length_lead = i
+                # Get length of a cycle for padding with 0s later
+
+
+                # if len(all_lead_cycles) > 0 and len(all_lead_cycles[min_length_lead]) > 0:
+                #     cycle_length = all_lead_cycles[min_length_lead][0]
+                # else:
+                #     continue
+
+                cycle_length = len(all_lead_cycles[0][0])
+                
                 # Prepare rows for each cycle
-                for cycle_idx in range(max_lead_length):
+                for cycle_idx in range(min_lead_length):
                     cycle_data = []
                     durations = []
                     for lead_idx in range(12):
@@ -172,7 +183,14 @@ def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, c
                         else:
                             duration = 0.0
 
-                        row_data = [diag_label] + cycle + [duration]
+                        # row_data = {'diagnosis': diagnosis, 'cycle_duration': duration}
+                        row_data = np.concatenate((np.array([diag_label]), cycle))
+                        row_data = np.concatenate((row_data, np.array([duration])))
+                        # row_data += [duration]
+
+                        # for i in range(len(cycle)):
+                        #     row_data[f'point_{i + 1}'] = cycle[i]
+                            
                         durations.append(duration)
                         cycle_data.append(row_data)
                     duration_matrix.append(durations)
