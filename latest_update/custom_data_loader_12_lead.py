@@ -105,7 +105,7 @@ def load_data(paths, disease_labels=None, data_type="normal", max_circle=None, c
         header_files, recording_files = find_all_challenge_files(path)
         length = len(header_files)
 
-        for i in range(length):
+        for i in range(1000):
 
             # Get mat and header files
             mat_file_path = recording_files[i]
